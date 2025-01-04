@@ -1,0 +1,124 @@
+/* Build a command-line file manager that allows users to navigate directories, view files, create directories, and copy or move files. Use C++ file handling for this project. in c++ programming.*/
+#include <iostream>
+#include <filesystem>
+#include <fstream>
+
+namespace fs = std::filesystem;
+
+void listFiles(const fs::path& path) {
+    try {
+        std::cout << "Contents of " << path << ":\n";
+        for (const auto& entry : fs::directory_iterator(path)) {
+            std::cout << (entry.is_directory() ? "[DIR]  " : "[FILE] ") << entry.path().filename().string() << "\n";
+        }
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+void createDirectory(const fs::path& path) {
+    try {
+        if (fs::create_directory(path)) {
+            std::cout << "Directory created: " << path << "\n";
+        } else {
+            std::cerr << "Failed to create directory: " << path << "\n";
+        }
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+void copyFile(const fs::path& source, const fs::path& destination) {
+    try {
+        fs::copy(source, destination, fs::copy_options::overwrite_existing);
+        std::cout << "File copied from " << source << " to " << destination << "\n";
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+void moveFile(const fs::path& source, const fs::path& destination) {
+    try {
+        fs::rename(source, destination);
+        std::cout << "File moved from " << source << " to " << destination << "\n";
+    } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+void viewFile(const fs::path& path) {
+    try {
+        std::ifstream file(path);
+        if (!file) {
+            std::cerr << "Error: Unable to open file " << path << "\n";
+            return;
+        }
+
+        std::cout << "Contents of " << path << ":\n";
+        std::string line;
+        while (std::getline(file, line)) {
+            std::cout << line << "\n";
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+    }
+}
+
+int main() {
+    std::string command;
+    fs::path currentPath = fs::current_path();
+
+    std::cout << "Simple Command-Line File Manager\n";
+    std::cout << "Type 'help' for a list of commands.\n";
+
+    while (true) {
+        std::cout << "\nCurrent directory: " << currentPath << "\n";
+        std::cout << "> ";
+        std::cin >> command;
+
+        if (command == "exit") {
+            break;
+        } else if (command == "list") {
+            listFiles(currentPath);
+        } else if (command == "cd") {
+            std::string newDir;
+            std::cin >> newDir;
+            fs::path newPath = currentPath / newDir;
+            if (fs::exists(newPath) && fs::is_directory(newPath)) {
+                currentPath = newPath;
+            } else {
+                std::cerr << "Directory does not exist." << "\n";
+            }
+        } else if (command == "mkdir") {
+            std::string dirName;
+            std::cin >> dirName;
+            createDirectory(currentPath / dirName);
+        } else if (command == "copy") {
+            std::string source, destination;
+            std::cin >> source >> destination;
+            copyFile(currentPath / source, currentPath / destination);
+        } else if (command == "move") {
+            std::string source, destination;
+            std::cin >> source >> destination;
+            moveFile(currentPath / source, currentPath / destination);
+        } else if (command == "view") {
+            std::string fileName;
+            std::cin >> fileName;
+            viewFile(currentPath / fileName);
+        } else if (command == "help") {
+            std::cout << "Available commands:\n";
+            std::cout << "  list       - List contents of the current directory\n";
+            std::cout << "  cd <dir>   - Change directory\n";
+            std::cout << "  mkdir <name> - Create a new directory\n";
+            std::cout << "  copy <src> <dest> - Copy a file\n";
+            std::cout << "  move <src> <dest> - Move a file\n";
+            std::cout << "  view <file> - View the contents of a file\n";
+            std::cout << "  exit       - Exit the file manager\n";
+        } else {
+            std::cerr << "Unknown command. Type 'help' for a list of commands." << "\n";
+        }
+    }
+
+    std::cout << "Exiting file manager. Goodbye!\n";
+    return 0;
+}
